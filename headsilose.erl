@@ -4,7 +4,6 @@
 -include_lib("xmerl/include/xmerl.hrl").
 
 %Supply a direction and location and work out if head wind or not
-%Should be relatively easy
 %For now "know the location id" upfront, but ideally need to search for it at some point or present a choice.
 
 %headsilose(Direction, Location) -> 
@@ -28,23 +27,48 @@ get_locations() ->
 	{ ok, {_Status, _Headers, Body }} = httpc:request(URL),
 	Body.
 
+
 get_weather(Location) ->
 	inets:start(),
 	Key = readapikey(),
 	URL = ?BASE_URL ++ ?WXFCS_LOCATIONID ++ Location ++ "?key=" ++ Key ++ "&res=3hourly",
 	{ ok, {_Status, _Headers, Body }} = httpc:request(URL),
 	{ Xml, _Rest } = xmerl_scan:string(Body),
-	[ #xmlAttribute{value=Direction} ]  = xmerl_xpath:string("//Period[@value='2013-11-28Z']/Rep[.='180']/@D", Xml),
+	Date_today = erlang:localtime(),
+	{ Date_formatted, Rep } = date_and_rep(Date_today),
+	% D is wind direction
+	% G is gust
+	% S is speed
+	[ #xmlAttribute{value=Direction} ]  = xmerl_xpath:string("//Period[@value='" ++ Date_formatted ++ "']/Rep[.='" ++ Rep ++ "']/@D", Xml),
 	Direction.
 
-%Todo:
-% Need to get current time and depnding on before/after 8am 5pm then analyse the evening/morning direction
-% Need somethng that understands compass directions
-%{{Year, Month, Day}, {Hours, _Minutes, _Seconds}} = erlang:localtime()
-%if ( Hours < 8 ) %then that day
-%if ( Hours < 19 ) ) %assume want home
-%if ( Hours > 19 ) ) %assume want next day weather
-% Change xpath filter basically
+
+date_and_rep(Date) ->
+	{{_Year, _Month, _Day}, {Hours, _Minutes, _Seconds}} = Date,
+	date_and_rep(Date, Hours).
+date_and_rep(Date, Hours) when Hours < 8 ->
+	Rep = "360",
+	{format_date(Date), Rep};
+date_and_rep(Date, Hours) when Hours >= 8, Hours < 19 ->
+	Rep = "1080",
+	{format_date(Date), Rep};
+date_and_rep(Date, Hours) when Hours >= 19 ->
+	Rep = "360",
+	{format_date(find_next_day(Date)), Rep}.
+
+
+format_date(Date_to_format) ->
+	{{Year, Month, Day}, {_Hours, _Minutes, _Seconds}} = Date_to_format,
+	Thing = erlang:integer_to_list(Year) ++ "-" ++ erlang:integer_to_list(Month) ++ "-" ++ erlang:integer_to_list(Day) ++ "Z",
+	Thing.
+
+
+find_next_day(Date_today) ->
+	%get in seconds
+	Seconds_today = calendar:datetime_to_gregorian_seconds(Date_today),
+	Date_tomorrow = calendar:gregorian_seconds_to_datetime(Seconds_today+86400),
+	Date_tomorrow.
+
 
 %Need to read API key from file
 readapikey() ->
