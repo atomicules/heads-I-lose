@@ -92,12 +92,8 @@ direction_is_opposite(Heading, Wind) ->
 	Index = length(lists:takewhile(fun(X) -> X  =/= Wind end, Compass))+1,
 	%Since heading is to direction and winds are from, opposite is -2 to +2
 	%Or to make it easier to wrap, +14 +18
-	Opposites = [nth_wrap(Index+14, Compass),
-	             nth_wrap(Index+15, Compass),
-	             nth_wrap(Index+16, Compass),
-	             nth_wrap(Index+17, Compass),
-	             nth_wrap(Index+18, Compass)],
-	%Yuck! Must be better way to build that
+	OppositeList = lists:seq(14,18),
+	Opposites = lists:map(fun(X) -> nth_wrap(Index+X, Compass) end, OppositeList),
 	lists:member(Heading, Opposites).
 
 
