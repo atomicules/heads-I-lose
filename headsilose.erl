@@ -1,5 +1,5 @@
 -module(headsilose).
--export([readapikey/0, get_locations/0, get_weather/1, direction_is_opposite/2, headsilose/2]).
+-export([date_and_rep/1, readapikey/0, get_locations/0, get_weather/1, headsilose/2]).
 -include_lib("xmerl/include/xmerl.hrl").
 
 %Supply a direction and location and work out if head wind or not
@@ -25,21 +25,13 @@ get_locations() ->
 	Body.
 
 
-headsilose(Location, Heading) ->
-	Wind = get_weather(Location),
-	Direction_is_opposite = direction_is_opposite(Heading, Wind),
-	if Direction_is_opposite ->
-		heads_you_lose;
-	true -> 
-		tails_you_win
-	end.
-
-
 get_weather(Location) ->
 	inets:start(),
 	Key = readapikey(),
 	URL = ?BASE_URL ++ ?WXFCS_LOCATIONID ++ Location ++ "?key=" ++ Key ++ "&res=3hourly",
 	{ ok, {_Status, _Headers, Body }} = httpc:request(URL),
+	%Need to check for 503
+	
 	{ Xml, _Rest } = xmerl_scan:string(Body),
 	Date_today = erlang:localtime(),
 	{ Date_formatted, Rep } = date_and_rep(Date_today),
@@ -66,8 +58,9 @@ date_and_rep(Date, Hours) when Hours >= 19 ->
 
 format_date(Date_to_format) ->
 	{{Year, Month, Day}, {_Hours, _Minutes, _Seconds}} = Date_to_format,
-	Thing = erlang:integer_to_list(Year) ++ "-" ++ erlang:integer_to_list(Month) ++ "-" ++ erlang:integer_to_list(Day) ++ "Z",
-	Thing.
+	%Thanks to:http://stackoverflow.com/questions/7598972/format-with-leading-zeros-in-erlang/7599506#7599506 
+	DateAsString = io_lib:format("~4..0w-~2..0w-~2..0wZ", [Year, Month, Day]),
+	lists:flatten(DateAsString).
 
 
 nth_wrap(N, List) ->
@@ -86,15 +79,30 @@ find_next_day(Date_today) ->
 	Date_tomorrow.
 
 
-direction_is_opposite(Heading, Wind) ->
+headsilose(Location, Heading) ->
+	Wind = get_weather(Location),
 	Compass = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"],
 	%Quicker dirtier(?) way to do below would be: http://stackoverflow.com/a/6762191/208793
 	Index = length(lists:takewhile(fun(X) -> X  =/= Wind end, Compass))+1,
-	%Since heading is to direction and winds are from, opposite is -2 to +2
-	%Or to make it easier to wrap, +14 +18
-	OppositeList = lists:seq(14,18),
-	Opposites = lists:map(fun(X) -> nth_wrap(Index+X, Compass) end, OppositeList),
-	lists:member(Heading, Opposites).
+	%Since heading is to direction and winds are from, opposite is -2 to +2, or to make it easier to wrap, +14 +18
+	%Since heading is to direction and winds are from, sidewinds are -5 to -3 and +3 to +5, or to make it easier to wrap, +14 +18
+	%And so on
+	HeadwindList = lists:seq(14,18),
+	SidewindList = lists:seq(3,5)++lists:seq(11,13),
+	TailwindList = lists:seq(6,10),
+	Headwinds = lists:map(fun(X) -> nth_wrap(Index+X, Compass) end, HeadwindList),
+	Sidewinds = lists:map(fun(X) -> nth_wrap(Index+X, Compass) end, SidewindList),
+	Tailwinds = lists:map(fun(X) -> nth_wrap(Index+X, Compass) end, TailwindList),
+	Headwind = lists:member(Heading, Headwinds),
+	Sidewind = lists:member(Heading, Sidewinds),
+	Tailwind = lists:member(Heading, Tailwinds),
+	if Headwind ->
+		heads_you_lose;
+	Sidewind ->
+		draw;
+	Tailwind ->
+		tails_you_win
+	end.
 
 
 %Need to read API key from file
