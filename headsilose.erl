@@ -1,5 +1,5 @@
 -module(headsilose).
--export([date_and_rep/1, readapikey/0, get_locations/0, get_weather/1, headsilose/2]).
+-export([date_and_rep/1, readapikey/0, get_locations/0, get_weather/1, headsilose/2, start/1]).
 -include_lib("xmerl/include/xmerl.hrl").
 
 %Supply a direction and location and work out if head wind or not
@@ -97,12 +97,18 @@ headsilose(Location, Heading) ->
 	Sidewind = lists:member(Heading, Sidewinds),
 	Tailwind = lists:member(Heading, Tailwinds),
 	if Headwind ->
-		heads_you_lose;
+		io:format("Heads you lose!~n");
 	Sidewind ->
-		draw;
+		io:format("It's a draw~n");
 	Tailwind ->
-		tails_you_win
+		io:format("Tails you win!~n")
 	end.
+
+
+%From http://stackoverflow.com/a/8498073/208793
+start(Args) ->
+	[Location, Heading] = Args,
+	headsilose(Location, Heading).
 
 
 %Need to read API key from file
