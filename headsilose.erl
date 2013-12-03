@@ -22,7 +22,20 @@ get_locations() ->
 	Key = readapikey(),
 	URL = ?BASE_URL ++ ?WXFCS_SITELIST ++ "?key=" ++ Key,
 	{ ok, {_Status, _Headers, Body }} = httpc:request(URL),
-	Body.
+	%Print a list of Locations and IDs
+	{ Xml, _Rest } = xmerl_scan:string(Body),
+	print_locations(xmerl_xpath:string("//Location", Xml)).
+
+
+%Based on http://intertwingly.net/blog/2007/08/28/Parsing-Atom-with-Erlang
+print_locations([]) ->
+	end_of_list;
+print_locations([Node|Rest]) ->
+	%Need to do this recursively
+	[ #xmlAttribute{value=Location} ] = xmerl_xpath:string("@name", Node),
+	[ #xmlAttribute{value=ID} ] = xmerl_xpath:string("@id", Node),
+	io:format(Location++", "++ID++"~n"),
+	print_locations(Rest).
 
 
 get_weather(Location) ->
