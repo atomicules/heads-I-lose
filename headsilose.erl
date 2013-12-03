@@ -1,5 +1,5 @@
 -module(headsilose).
--export([date_and_rep/1, readapikey/0, get_locations/0, get_weather/1, headsilose/2, start/1]).
+-export([date_and_rep/1, readapikey/0, get_locations/0, get_locations/1, get_weather/1, headsilose/2, start/1]).
 -include_lib("xmerl/include/xmerl.hrl").
 
 %Supply a direction and location and work out if head wind or not
@@ -16,15 +16,18 @@
 -define(WXFCS_LOCATIONID,
 	"val/wxfcs/all/xml/").
 
-
+get_locations(Search) ->
+	get_locations_("//Location[contains(@name, '"++Search++"')]").
 get_locations() ->
+	get_locations_("//Location").
+get_locations_(Xpath) ->
 	inets:start(),
 	Key = readapikey(),
 	URL = ?BASE_URL ++ ?WXFCS_SITELIST ++ "?key=" ++ Key,
 	{ ok, {_Status, _Headers, Body }} = httpc:request(URL),
 	%Print a list of Locations and IDs
 	{ Xml, _Rest } = xmerl_scan:string(Body),
-	print_locations(xmerl_xpath:string("//Location", Xml)).
+	print_locations(xmerl_xpath:string(Xpath, Xml)).
 
 
 %Based on http://intertwingly.net/blog/2007/08/28/Parsing-Atom-with-Erlang
