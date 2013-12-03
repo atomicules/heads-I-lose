@@ -1,5 +1,5 @@
 -module(headsilose).
--export([date_and_rep/1, readapikey/0, get_locations/0, get_locations/1, get_weather/1, headsilose/2, start/1]).
+-export([get_locations/0, get_locations/1, headsilose/2, headsilose/1]).
 -include_lib("xmerl/include/xmerl.hrl").
 
 %Supply a direction and location and work out if head wind or not
@@ -16,6 +16,10 @@
 -define(WXFCS_LOCATIONID,
 	"val/wxfcs/all/xml/").
 
+
+%First one for command line usage
+get_locations([Search]) ->
+	get_locations(Search);
 get_locations(Search) ->
 	get_locations_("//Location[contains(@name, '"++Search++"')]").
 get_locations() ->
@@ -95,6 +99,9 @@ find_next_day(Date_today) ->
 	Date_tomorrow.
 
 
+%For command line usage, from http://stackoverflow.com/a/8498073/208793
+headsilose([Location, Heading]) ->
+	headsilose(Location, Heading).
 headsilose(Location, Heading) ->
 	Wind = get_weather(Location),
 	Compass = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"],
@@ -121,13 +128,7 @@ headsilose(Location, Heading) ->
 	end.
 
 
-%From http://stackoverflow.com/a/8498073/208793
-start(Args) ->
-	[Location, Heading] = Args,
-	headsilose(Location, Heading).
-
-
 %Need to read API key from file
 readapikey() ->
-	{Status, KeyB} = file:read_file(os:getenv("HOME") ++ "/.datapoint"),
+	{_Status, KeyB} = file:read_file(os:getenv("HOME") ++ "/.datapoint"),
 	string:strip(erlang:binary_to_list(KeyB),right,$\n).
