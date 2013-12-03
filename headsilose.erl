@@ -5,7 +5,7 @@
 %Supply a direction and location and work out if head wind or not
 %For now "know the location id" upfront, but ideally need to search for it at some point or present a choice.
 
-%Based on: http://pragdave.pragprog.com/pragdave/2007/04/a_first_erlang_.html 
+%Initially based on: http://pragdave.pragprog.com/pragdave/2007/04/a_first_erlang_.html 
 
 -define(BASE_URL,
 	"http://datapoint.metoffice.gov.uk/public/data/").
@@ -74,7 +74,7 @@ date_and_rep(Date, Hours) when Hours >= 19 ->
 
 format_date(Date_to_format) ->
 	{{Year, Month, Day}, {_Hours, _Minutes, _Seconds}} = Date_to_format,
-	%Thanks to:http://stackoverflow.com/questions/7598972/format-with-leading-zeros-in-erlang/7599506#7599506 
+	%Thanks to: http://stackoverflow.com/a/7599506/208793
 	DateAsString = io_lib:format("~4..0w-~2..0w-~2..0wZ", [Year, Month, Day]),
 	lists:flatten(DateAsString).
 
