@@ -55,11 +55,10 @@ get_weather(Location) ->
 	{ Xml, _Rest } = xmerl_scan:string(Body),
 	Date_today = erlang:localtime(),
 	{ Date_formatted, Rep } = date_and_rep(Date_today),
-	% D is wind direction
-	% G is gust
-	% S is speed
 	[ #xmlAttribute{value=Direction} ]  = xmerl_xpath:string("//Period[@value='" ++ Date_formatted ++ "']/Rep[.='" ++ Rep ++ "']/@D", Xml),
-	Direction.
+	[ #xmlAttribute{value=Speed} ]  = xmerl_xpath:string("//Period[@value='" ++ Date_formatted ++ "']/Rep[.='" ++ Rep ++ "']/@S", Xml),
+	[ #xmlAttribute{value=Gust} ]  = xmerl_xpath:string("//Period[@value='" ++ Date_formatted ++ "']/Rep[.='" ++ Rep ++ "']/@G", Xml),
+	{Direction, Speed, Gust}.
 
 
 date_and_rep(Date) ->
@@ -103,10 +102,10 @@ find_next_day(Date_today) ->
 headsilose([Location, Heading]) ->
 	headsilose(Location, Heading).
 headsilose(Location, Heading) ->
-	Wind = get_weather(Location),
+	{Direction, Speed, Gust} = get_weather(Location),
 	Compass = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"],
 	%Quicker dirtier(?) way to do below would be: http://stackoverflow.com/a/6762191/208793
-	Index = length(lists:takewhile(fun(X) -> X  =/= Wind end, Compass))+1,
+	Index = length(lists:takewhile(fun(X) -> X  =/= Direction end, Compass))+1,
 	%Since heading is to direction and winds are from, opposite is -2 to +2, or to make it easier to wrap, +14 +18
 	%Since heading is to direction and winds are from, sidewinds are -5 to -3 and +3 to +5, or to make it easier to wrap, +14 +18
 	%And so on
@@ -125,7 +124,8 @@ headsilose(Location, Heading) ->
 		io:format("It's a draw~n");
 	Tailwind ->
 		io:format("Tails you win!~n")
-	end.
+	end,
+	io:format("Direction: ~s, Speed: ~s mph, Gust: ~s mph~n", [Direction, Speed, Gust]).
 
 
 %Need to read API key from file
