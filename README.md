@@ -13,6 +13,13 @@ Since I wrote this to be semi-useful for me, the result returned depends on the 
 
 Heading is the overall direction of travel in 16-point compass format. So a heading of N means going from south to north. I only mention this because wind directions are "directions from".
 
+_Hint:_ I have a shell function defined as follows:
+
+	function headsilose { erl -pa /path/to/heads-I-lose/ -run headsilose headsilose XXXXXX "$@" -noshell -s init stop; }
+
+So I can just call
+
+	headsilose N
 
 ##Credits
 
