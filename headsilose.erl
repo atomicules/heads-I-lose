@@ -28,10 +28,20 @@ get_locations_(Xpath) ->
 	inets:start(),
 	Key = readapikey(),
 	URL = ?BASE_URL ++ ?WXFCS_SITELIST ++ "?key=" ++ Key,
-	{ ok, {_Status, _Headers, Body }} = httpc:request(URL),
-	%Print a list of Locations and IDs
-	{ Xml, _Rest } = xmerl_scan:string(Body),
-	print_locations(xmerl_xpath:string(Xpath, Xml)).
+	try
+		%Handling timeouts: http://stackoverflow.com/a/14143762/208793
+		{ ok, {_Status, _Headers, Body }} = httpc:request(get, {URL, []}, [{timeout, timer:seconds(10)}], []),
+		{ Xml, _Rest } = xmerl_scan:string(Body),
+		%Print a list of Locations and IDs
+		print_locations(xmerl_xpath:string(Xpath, Xml))
+		%Strictly speaking this function shouldn't be here as it's recursive
+		%but get_locations is a run once function so I think it's ok
+		%See note above http://learnyousomeerlang.com/errors-and-exceptions#theres-more
+	catch
+        error:Reason ->
+			io:format("API Might be down~n"),
+			Reason
+	end.
 
 
 %Based on http://intertwingly.net/blog/2007/08/28/Parsing-Atom-with-Erlang
@@ -49,16 +59,21 @@ get_weather(Location) ->
 	inets:start(),
 	Key = readapikey(),
 	URL = ?BASE_URL ++ ?WXFCS_LOCATIONID ++ Location ++ "?key=" ++ Key ++ "&res=3hourly",
-	{ ok, {_Status, _Headers, Body }} = httpc:request(URL),
-	%Need to check for 503
-	
-	{ Xml, _Rest } = xmerl_scan:string(Body),
 	Date_today = erlang:localtime(),
 	{ Date_formatted, Rep } = date_and_rep(Date_today),
-	[ #xmlAttribute{value=Direction} ]  = xmerl_xpath:string("//Period[@value='" ++ Date_formatted ++ "']/Rep[.='" ++ Rep ++ "']/@D", Xml),
-	[ #xmlAttribute{value=Speed} ]  = xmerl_xpath:string("//Period[@value='" ++ Date_formatted ++ "']/Rep[.='" ++ Rep ++ "']/@S", Xml),
-	[ #xmlAttribute{value=Gust} ]  = xmerl_xpath:string("//Period[@value='" ++ Date_formatted ++ "']/Rep[.='" ++ Rep ++ "']/@G", Xml),
-	{Direction, Speed, Gust}.
+	try
+		{ ok, {_Status, _Headers, Body }} = httpc:request(get, {URL, []}, [{timeout, timer:seconds(10)}], []),
+		{ Xml, _Rest } = xmerl_scan:string(Body),
+		[ #xmlAttribute{value=Direction} ]  = xmerl_xpath:string("//Period[@value='" ++ Date_formatted ++ "']/Rep[.='" ++ Rep ++ "']/@D", Xml),
+		[ #xmlAttribute{value=Speed} ]  = xmerl_xpath:string("//Period[@value='" ++ Date_formatted ++ "']/Rep[.='" ++ Rep ++ "']/@S", Xml),
+		[ #xmlAttribute{value=Gust} ]  = xmerl_xpath:string("//Period[@value='" ++ Date_formatted ++ "']/Rep[.='" ++ Rep ++ "']/@G", Xml),
+		{Direction, Speed, Gust}
+	catch
+        error:Reason ->
+			io:format("API Might be down~n"),
+			Reason
+	end.
+
 
 
 date_and_rep(Date) ->
