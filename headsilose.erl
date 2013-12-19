@@ -127,12 +127,15 @@ headsilose(Location, Heading) ->
 	HeadwindList = lists:seq(14,18),
 	SidewindList = lists:seq(3,5)++lists:seq(11,13),
 	TailwindList = lists:seq(6,10),
-	Headwinds = lists:map(fun(X) -> nth_wrap(Index+X, Compass) end, HeadwindList),
-	Sidewinds = lists:map(fun(X) -> nth_wrap(Index+X, Compass) end, SidewindList),
-	Tailwinds = lists:map(fun(X) -> nth_wrap(Index+X, Compass) end, TailwindList),
-	Headwind = lists:member(Heading, Headwinds),
-	Sidewind = lists:member(Heading, Sidewinds),
-	Tailwind = lists:member(Heading, Tailwinds),
+	[Headwinds, Sidewinds, Tailwinds] = lists:map(fun(WindList) ->
+		lists:map(fun(X) ->
+			nth_wrap(Index+X, Compass) end,
+			WindList)
+		end,
+		[HeadwindList, SidewindList, TailwindList]),
+	[Headwind, Sidewind, Tailwind] = lists:map(fun(Winds) ->
+		lists:member(Heading, Winds) end,
+		[Headwinds, Sidewinds, Tailwinds]),
 	if Headwind ->
 		io:format("Heads you lose!~n");
 	Sidewind ->
