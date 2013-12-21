@@ -70,9 +70,9 @@ get_weather(Location) ->
 		  [ #xmlAttribute{value=Gust} ],
 		  [ #xmlAttribute{value=Weather} ],
 		  [ #xmlAttribute{value=Temperature} ] ] = lists:map(fun(X) ->
-					xmerl_xpath:string("//Period[@value='" ++ Date_formatted ++ "']/Rep[.='" ++ Rep ++ "']/@"++X, Xml)
-				end,
-				["D", "S", "G", "W", "T"]),
+				xmerl_xpath:string("//Period[@value='" ++ Date_formatted ++ "']/Rep[.='" ++ Rep ++ "']/@"++X, Xml)
+			end,
+			["D", "S", "G", "W", "T"]),
 		{Direction, Speed, Gust, Weather, Temperature}
 	catch
 		error:Reason ->
