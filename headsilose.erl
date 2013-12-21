@@ -39,7 +39,7 @@ get_locations_(Xpath) ->
 		%but get_locations is a run once function so I think it's ok
 		%See note above http://learnyousomeerlang.com/errors-and-exceptions#theres-more
 	catch
-        error:Reason ->
+		error:Reason ->
 			io:format("API Might be down~n"),
 			Reason
 	end.
@@ -65,17 +65,17 @@ get_weather(Location) ->
 	try
 		{ ok, {_Status, _Headers, Body }} = httpc:request(get, {URL, []}, [{timeout, timer:seconds(10)}], []),
 		{ Xml, _Rest } = xmerl_scan:string(Body),
-		[	[ #xmlAttribute{value=Direction} ],
-			[ #xmlAttribute{value=Speed} ], 
-			[ #xmlAttribute{value=Gust} ], 
-			[ #xmlAttribute{value=Weather} ],
-			[ #xmlAttribute{value=Temperature} ] ] = lists:map(fun(X) ->
+		[ [ #xmlAttribute{value=Direction} ],
+		  [ #xmlAttribute{value=Speed} ],
+		  [ #xmlAttribute{value=Gust} ],
+		  [ #xmlAttribute{value=Weather} ],
+		  [ #xmlAttribute{value=Temperature} ] ] = lists:map(fun(X) ->
 					xmerl_xpath:string("//Period[@value='" ++ Date_formatted ++ "']/Rep[.='" ++ Rep ++ "']/@"++X, Xml)
 				end,
 				["D", "S", "G", "W", "T"]),
 		{Direction, Speed, Gust, Weather, Temperature}
 	catch
-        error:Reason ->
+		error:Reason ->
 			io:format("API Might be down~n"),
 			Reason
 	end.
@@ -106,7 +106,7 @@ format_date(Date_to_format) ->
 nth_wrap(N, List) ->
 	Rem = N rem (length(List)),
 	if Rem > 0 ->
-	   lists:nth(Rem, List);
+		lists:nth(Rem, List);
 	Rem =:= 0 ->
 		1
 	end.
