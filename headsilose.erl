@@ -65,11 +65,14 @@ get_weather(Location) ->
 	try
 		{ ok, {_Status, _Headers, Body }} = httpc:request(get, {URL, []}, [{timeout, timer:seconds(10)}], []),
 		{ Xml, _Rest } = xmerl_scan:string(Body),
-		[ #xmlAttribute{value=Direction} ]  = xmerl_xpath:string("//Period[@value='" ++ Date_formatted ++ "']/Rep[.='" ++ Rep ++ "']/@D", Xml),
-		[ #xmlAttribute{value=Speed} ]  = xmerl_xpath:string("//Period[@value='" ++ Date_formatted ++ "']/Rep[.='" ++ Rep ++ "']/@S", Xml),
-		[ #xmlAttribute{value=Gust} ]  = xmerl_xpath:string("//Period[@value='" ++ Date_formatted ++ "']/Rep[.='" ++ Rep ++ "']/@G", Xml),
-		[ #xmlAttribute{value=Weather} ]  = xmerl_xpath:string("//Period[@value='" ++ Date_formatted ++ "']/Rep[.='" ++ Rep ++ "']/@W", Xml),
-		[ #xmlAttribute{value=Temperature} ]  = xmerl_xpath:string("//Period[@value='" ++ Date_formatted ++ "']/Rep[.='" ++ Rep ++ "']/@T", Xml),
+		[	[ #xmlAttribute{value=Direction} ],
+			[ #xmlAttribute{value=Speed} ], 
+			[ #xmlAttribute{value=Gust} ], 
+			[ #xmlAttribute{value=Weather} ],
+			[ #xmlAttribute{value=Temperature} ] ] = lists:map(fun(X) ->
+					xmerl_xpath:string("//Period[@value='" ++ Date_formatted ++ "']/Rep[.='" ++ Rep ++ "']/@"++X, Xml)
+				end,
+				["D", "S", "G", "W", "T"]),
 		{Direction, Speed, Gust, Weather, Temperature}
 	catch
         error:Reason ->
