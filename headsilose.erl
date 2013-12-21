@@ -69,7 +69,8 @@ get_weather(Location) ->
 		[ #xmlAttribute{value=Speed} ]  = xmerl_xpath:string("//Period[@value='" ++ Date_formatted ++ "']/Rep[.='" ++ Rep ++ "']/@S", Xml),
 		[ #xmlAttribute{value=Gust} ]  = xmerl_xpath:string("//Period[@value='" ++ Date_formatted ++ "']/Rep[.='" ++ Rep ++ "']/@G", Xml),
 		[ #xmlAttribute{value=Weather} ]  = xmerl_xpath:string("//Period[@value='" ++ Date_formatted ++ "']/Rep[.='" ++ Rep ++ "']/@W", Xml),
-		{Direction, Speed, Gust, Weather}
+		[ #xmlAttribute{value=Temperature} ]  = xmerl_xpath:string("//Period[@value='" ++ Date_formatted ++ "']/Rep[.='" ++ Rep ++ "']/@T", Xml),
+		{Direction, Speed, Gust, Weather, Temperature}
 	catch
         error:Reason ->
 			io:format("API Might be down~n"),
@@ -119,7 +120,7 @@ find_next_day(Date_today) ->
 headsilose([Location, Heading]) ->
 	headsilose(Location, Heading).
 headsilose(Location, Heading) ->
-	{Direction, Speed, Gust, Weather} = get_weather(Location),
+	{Direction, Speed, Gust, Weather, Temperature} = get_weather(Location),
 	Weather_type = weather_types:weather_type(erlang:list_to_integer(Weather)),
 	Compass = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"],
 	%Quicker dirtier(?) way to do below would be: http://stackoverflow.com/a/6762191/208793
@@ -146,7 +147,7 @@ headsilose(Location, Heading) ->
 	Tailwind ->
 		io:format("Tails you win!~n")
 	end,
-	io:format("Direction: ~s, Speed: ~s mph, Gust: ~s mph, Weather type: ~s~n", [Direction, Speed, Gust, Weather_type]).
+	io:format("Direction: ~s~nSpeed: ~s mph~nGust: ~s mph~nWeather type: ~s~nTemperature: ~s deg C~n", [Direction, Speed, Gust, Weather_type, Temperature]).
 
 
 %Need to read API key from file

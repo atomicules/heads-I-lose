@@ -34,6 +34,5 @@ Various posts I've found that have helped me out:
 ##Todo
 
 - Make it factor in wind speed and gusts to the win/lose decision as opposed to just direction.
-- Report out a bit more info in addition to the win/lose/draw.
 - Sort the list of locations?
 - Error handling, because the API does seem to be a bit flaky.
