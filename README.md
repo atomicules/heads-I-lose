@@ -5,7 +5,7 @@ A little learning exercise in Erlang. It looks up the wind direction ([via the M
 ##Usage
 
 1. Get an [API key](http://www.metoffice.gov.uk/datapoint/support/API) and save in a file called `~/.datapoint`.
-2. Compile with `erlc headsilose.erl`.
+2. Compile with `erlc headsilose.erl; erlc weather_types.erl`.
 3. Run `erl -run headsilose get_locations <Optional search term> -noshell -s init stop` to get a list of locations and Ids. The optional search term cannot contain spaces.
 4. Then run `erl -run headsilose headsilose <location id> <heading in 16-point compass format> -noshell -s init stop` to get the result.
 

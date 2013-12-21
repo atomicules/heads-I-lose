@@ -1,6 +1,7 @@
 -module(headsilose).
 -export([get_locations/0, get_locations/1, headsilose/2, headsilose/1]).
 -include_lib("xmerl/include/xmerl.hrl").
+-import(weather_types, [weather_type/1]).
 
 %Supply a direction and location and work out if head wind or not
 %For now "know the location id" upfront, but ideally need to search for it at some point or present a choice.
@@ -67,7 +68,8 @@ get_weather(Location) ->
 		[ #xmlAttribute{value=Direction} ]  = xmerl_xpath:string("//Period[@value='" ++ Date_formatted ++ "']/Rep[.='" ++ Rep ++ "']/@D", Xml),
 		[ #xmlAttribute{value=Speed} ]  = xmerl_xpath:string("//Period[@value='" ++ Date_formatted ++ "']/Rep[.='" ++ Rep ++ "']/@S", Xml),
 		[ #xmlAttribute{value=Gust} ]  = xmerl_xpath:string("//Period[@value='" ++ Date_formatted ++ "']/Rep[.='" ++ Rep ++ "']/@G", Xml),
-		{Direction, Speed, Gust}
+		[ #xmlAttribute{value=Weather} ]  = xmerl_xpath:string("//Period[@value='" ++ Date_formatted ++ "']/Rep[.='" ++ Rep ++ "']/@W", Xml),
+		{Direction, Speed, Gust, Weather}
 	catch
         error:Reason ->
 			io:format("API Might be down~n"),
@@ -117,7 +119,8 @@ find_next_day(Date_today) ->
 headsilose([Location, Heading]) ->
 	headsilose(Location, Heading).
 headsilose(Location, Heading) ->
-	{Direction, Speed, Gust} = get_weather(Location),
+	{Direction, Speed, Gust, Weather} = get_weather(Location),
+	Weather_type = weather_types:weather_type(erlang:list_to_integer(Weather)),
 	Compass = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"],
 	%Quicker dirtier(?) way to do below would be: http://stackoverflow.com/a/6762191/208793
 	Index = length(lists:takewhile(fun(X) -> X  =/= Direction end, Compass))+1,
@@ -143,7 +146,7 @@ headsilose(Location, Heading) ->
 	Tailwind ->
 		io:format("Tails you win!~n")
 	end,
-	io:format("Direction: ~s, Speed: ~s mph, Gust: ~s mph~n", [Direction, Speed, Gust]).
+	io:format("Direction: ~s, Speed: ~s mph, Gust: ~s mph, Weather type: ~s~n", [Direction, Speed, Gust, Weather_type]).
 
 
 %Need to read API key from file
