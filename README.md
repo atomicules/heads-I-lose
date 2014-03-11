@@ -15,11 +15,13 @@ Heading is the overall direction of travel in 16-point compass format. So a head
 
 _Hint:_ I have a shell function defined as follows:
 
-	function headsilose { erl -pa /path/to/heads-I-lose/ -run headsilose headsilose XXXXXX "$@" -noshell -s init stop; }
+	function headsilose { erl -pa /path/to/heads-I-lose/ -run headsilose headsilose XXXXXX "$@" -noshell; }
 
 So I can just call
 
 	headsilose N
+
+_Note:_ I don't use [init stop](http://erlangcentral.org/wiki/index.php?title=Running_Erlang_Code_From_The_Command_Line&oldid=2293) in the command line call as I have that in my script instead. Otherwise, if `headsilose` errors out then `init stop` will crash out (I guess because it is trying to stop something that isn't running).
 
 ##Credits
 

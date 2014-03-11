@@ -1,5 +1,5 @@
 -module(headsilose).
--export([get_locations/0, get_locations/1, headsilose/2, headsilose/1]).
+-export([get_locations/0, get_locations/1, get_weather/1, headsilose/2, headsilose/1]).
 -include_lib("xmerl/include/xmerl.hrl").
 -import(weather_types, [weather_type/1]).
 
@@ -39,9 +39,11 @@ get_locations_(Xpath) ->
 		%but get_locations is a run once function so I think it's ok
 		%See note above http://learnyousomeerlang.com/errors-and-exceptions#theres-more
 	catch
-		error:Reason ->
+		_:Reason ->
 			io:format("API Might be down~n"),
 			Reason
+	after
+		maybe_quit()
 	end.
 
 
@@ -75,9 +77,11 @@ get_weather(Location) ->
 			["D", "S", "G", "W", "T"]),
 		{Direction, Speed, Gust, Weather, Temperature}
 	catch
-		error:Reason ->
+		_:Reason ->
 			io:format("API Might be down~n"),
 			Reason
+	after
+		maybe_quit()
 	end.
 
 
@@ -117,6 +121,15 @@ find_next_day(Date_today) ->
 	Seconds_today = calendar:datetime_to_gregorian_seconds(Date_today),
 	Date_tomorrow = calendar:gregorian_seconds_to_datetime(Seconds_today+86400),
 	Date_tomorrow.
+
+
+maybe_quit() ->
+	Args = init:get_arguments(), 
+	Found = lists:keyfind(noshell, 1, Args),
+	if Found =:= false ->
+		dont_quit;
+	true -> init:stop()
+	end.	
 
 
 %For command line usage, from http://stackoverflow.com/a/8498073/208793
