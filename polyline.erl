@@ -13,24 +13,28 @@ decode(Encoded_polyline) ->
 	Five_bit_chunks = five_bit_chunks(Encoded_polyline),
 	%Get back to eight bit chunks
 	Eight_bit_chunks = eight_bit_chunks(Five_bit_chunks).
-	%Invert
+	%Invert if negative, if last bit is a 1
 	%To finish...
 
 
 %Surely better way than this, but for now...
-eight_bit_chunks(Five_bit_chunk_string) ->
+%Need to pad and do from the right side
+eight_bit_chunks(List_of_five_bit_chunks) ->
+	Five_bit_chunk_string = lists:reverse(lists:flatten(List_of_five_bit_chunks)),
 	eight_bit_chunks_(Five_bit_chunk_string, []).
 eight_bit_chunks_(Five_bit_chunk_string, List_of_eight_bit_chunks) when length(Five_bit_chunk_string) > 8 ->  
-	%Is that a string or a list, might need to convert?
-	Eight_bit_chunk = lists:sublist(Five_bit_chunk_string,1,8),
-	Rest_of_five_bit_chunk_string = lists:nthtail(9,Five_bit_chunk_string),
+	Eight_bit_chunk = lists:reverse(lists:sublist(Five_bit_chunk_string,1,8)),
+	Rest_of_five_bit_chunk_string = lists:nthtail(8,Five_bit_chunk_string),
 	%io:format(Rest_of_five_bit_chunk_string++"~n"),
 	eight_bit_chunks_(Rest_of_five_bit_chunk_string, [Eight_bit_chunk]++List_of_eight_bit_chunks);
 eight_bit_chunks_(Five_bit_chunk_string, List_of_eight_bit_chunks) when length(Five_bit_chunk_string) =< 8, Five_bit_chunk_string /= [] ->  
 	%io:format(Five_bit_chunk_string++"~n"),
-	eight_bit_chunks_([], [Five_bit_chunk_string]++List_of_eight_bit_chunks);
+	Padded_bit_string = pad_to(8, lists:reverse(Five_bit_chunk_string)),
+	eight_bit_chunks_([], [Padded_bit_string]++List_of_eight_bit_chunks);
 eight_bit_chunks_([], List_of_eight_bit_chunks) ->
-	lists:reverse(List_of_eight_bit_chunks).
+	%No need to reverse. Already done
+	%lists:reverse(List_of_eight_bit_chunks).
+	List_of_eight_bit_chunks.
 
 
 five_bit_chunks(Encoded_polyline) ->
@@ -41,19 +45,30 @@ five_bit_chunks_([Head | Rest], List_of_chunks) ->
 	five_bit_chunks_(Rest,[Five_bit_chunk]++List_of_chunks);
 	%Something like that
 five_bit_chunks_([], List_of_chunks) ->
-	lists:reverse(List_of_chunks).
+	%Since want it reversed just leave as is
+	List_of_chunks.
 
 
-%What if Binary_chunk is shorter than 5?
 five_bit_chunk(Ascii_bit) ->
 	%subtract 63
 	Shifted_bit = Ascii_bit - 63,
 	%Convert to binary
 	%From http://erlangcentral.org/wiki/index.php/Converting_Between_Binary_and_Decimal
 	Binary_chunk = hd(io_lib:format("~.2B", [Shifted_bit])),
+	%What if Binary_chunk is shorter than 6?
+	Padded_chunk = pad_to(6, Binary_chunk),
 	%"Un-or" the value, get 5 bit chunk
 	%not the fanciest way, but...
-	lists:sublist(Binary_chunk,2,6).
+	lists:sublist(Padded_chunk,2,6).
+
+
+%I can't figure out padding with io:format etc when printing binary numbers
+pad_to(Length, Binary_string) when length(Binary_string) < Length ->
+	Padded_binary_string = "0"++Binary_string,
+	pad_to(Length, Padded_binary_string);
+pad_to(Length, Binary_string) when length(Binary_string) == Length ->
+	Binary_string.
+	
 
 
 %bnot doesn't seem to work as I thought it would so do it very inelegantly by switching each "bit" in a string.
