@@ -12,13 +12,31 @@ decode(Encoded_polyline) ->
 		%Un-reverse the 5 bit chunks
 	Five_bit_chunks = five_bit_chunks(Encoded_polyline),
 	%Get back to eight bit chunks
-	Eight_bit_chunks = eight_bit_chunks(Five_bit_chunks).
+	Eight_bit_chunks = eight_bit_chunks(Five_bit_chunks),
 	%Invert if negative, if last bit is a 1
 	%To finish...
-
+	Last_bit = [hd(lists:reverse(hd(lists:reverse(Eight_bit_chunks))))],
+	Flipped_chunks = lists:map(fun(Chunk) ->
+		bin_flip_(Chunk, []) end,
+		Eight_bit_chunks),
+	Chunks = if Last_bit =:= "1" ->
+		Flipped_chunks;
+	true ->
+		Eight_bit_chunks
+	end,
+	%Now want as one long binary and right shift one bit
+	{ok, [Flattened_binary], []} = io_lib:fread("~2u", lists:flatten(Chunks)),
+	Shifted_binary = Flattened_binary bsr 1,
+	%If negative need to take away one and invert again
+	Final_binary = if Last_bit =:= "1" ->
+		bin_flip(Shifted_binary - 1);
+	true ->
+		Shifted_binary
+	end,
+	Final_binary.
+	
 
 %Surely better way than this, but for now...
-%Need to pad and do from the right side
 eight_bit_chunks(List_of_five_bit_chunks) ->
 	Five_bit_chunk_string = lists:reverse(lists:flatten(List_of_five_bit_chunks)),
 	eight_bit_chunks_(Five_bit_chunk_string, []).
@@ -69,7 +87,6 @@ pad_to(Length, Binary_string) when length(Binary_string) < Length ->
 pad_to(Length, Binary_string) when length(Binary_string) == Length ->
 	Binary_string.
 	
-
 
 %bnot doesn't seem to work as I thought it would so do it very inelegantly by switching each "bit" in a string.
 %This is pretty close just need to decide whether want to return string or number.
