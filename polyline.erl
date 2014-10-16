@@ -33,7 +33,15 @@ decode(Encoded_polyline) ->
 	true ->
 		Shifted_binary
 	end,
-	Final_binary.
+	%Back to decimal
+	{ok, [Decimal], []} = io_lib:fread("~2u", Final_binary),
+	%Remember if negative or not and divide:
+	Decoded = if Last_bit =:= "1" ->
+		-1 * Decimal/100000;
+	true ->
+		Decimal/100000	
+	end,
+	Decoded.
 	
 
 %Surely better way than this, but for now...
