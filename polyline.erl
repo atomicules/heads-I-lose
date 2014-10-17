@@ -28,18 +28,22 @@ decode(Encoded_polyline) ->
 	{ok, [Flattened_binary], []} = io_lib:fread("~2u", lists:flatten(Chunks)),
 	Shifted_binary = Flattened_binary bsr 1,
 	%If negative need to take away one and invert again
+	%Since bin_flip returns a string need to then change back to a number
+	{ok, [Shifted_binary_], []} = io_lib:fread("~2u", bin_flip(Shifted_binary - 1)),
 	Final_binary = if Last_bit =:= "1" ->
-		bin_flip(Shifted_binary - 1);
+		%Because bin_flip returns string
+		Shifted_binary_;
 	true ->
 		Shifted_binary
 	end,
 	%Back to decimal
-	{ok, [Decimal], []} = io_lib:fread("~2u", Final_binary),
+	%It already is!
+	%{ok, [Decimal], []} = io_lib:fread("~2u", Final_binary),
 	%Remember if negative or not and divide:
 	Decoded = if Last_bit =:= "1" ->
-		-1 * Decimal/100000;
+		-1 * Final_binary/100000;
 	true ->
-		Decimal/100000	
+		Final_binary/100000	
 	end,
 	Decoded.
 	
