@@ -1,5 +1,5 @@
 -module(osrm).
--export([get_route/1, get_route/2, read_json/0]).
+-export([get_route/1, get_route/2, read_route/0]).
 -import(polyline, [decode/1]).
 
 %https://github.com/Project-OSRM/osrm-backend/wiki/Server-api
@@ -42,7 +42,7 @@ get_route([Start_lat, Start_lon], [Finish_lat, Finish_lon]) ->
 	end.
 
 
-read_json() ->
+read_route() ->
 	{_Status, Route} = file:read_file(os:getenv("HOME") ++ "/.headsilose_route"),
 	%Use jiffy
 	%http://www.snip2code.com/Snippet/51463/how-to-support-chinese-in-http-request-b/
