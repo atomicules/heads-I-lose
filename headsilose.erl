@@ -153,10 +153,10 @@ build_list_of_wind_directions(Wind_direction) ->
 		[HeadwindList, SidewindList, TailwindList]).
 
 
-convert_lats_longs_to_distance_heading([_, _, Rest])  -> 
+convert_lats_longs_to_distance_heading([_Head1 | [ _Head2 | Rest]])  -> 
 	%All co-ords are diff, so just ignore first two
 	convert_lats_longs_to_distance_heading_(Rest, []).
-convert_lats_longs_to_distance_heading_([Lat, Lon, Rest], List_distance_headings) ->
+convert_lats_longs_to_distance_heading_([Lat | [Lon | Rest]], List_distance_headings) ->
 	%Want to map through the list convert co-ords to distance and heading
 	Distance = math:sqrt(math:pow(Lat,2) + math:pow(Lon,2)),
 	Heading = math:atan2(Lon, Lat),
