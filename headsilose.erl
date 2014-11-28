@@ -159,7 +159,13 @@ convert_lats_longs_to_distance_heading([_Head1 | [ _Head2 | Rest]])  ->
 convert_lats_longs_to_distance_heading_([Lat | [Lon | Rest]], List_distance_headings) ->
 	%Want to map through the list convert co-ords to distance and heading
 	Distance = math:sqrt(math:pow(Lat,2) + math:pow(Lon,2)),
-	Heading = math:atan2(Lon, Lat),
+	Heading_signed = math:atan2(Lon, Lat),
+	%Need to convert heading into a 2π value
+	Heading = if Heading_signed < 0 ->
+				Heading_signed + 2*math:pi();
+			true ->
+				Heading_signed
+			end,
 	Compass_direction = get_compass_direction_for(Heading),
 	convert_lats_longs_to_distance_heading_(Rest, [{Distance, Compass_direction}]++List_distance_headings);
 convert_lats_longs_to_distance_heading_([], List_distance_headings) ->
