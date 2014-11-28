@@ -1,7 +1,9 @@
 -module(headsilose).
--export([get_locations/0, get_locations/1, get_weather/1, headsilose/2, headsilose/1]).
+-export([get_locations/0, get_locations/1, get_weather/1, headsilose/1]).
 -include_lib("xmerl/include/xmerl.hrl").
 -import(weather_types, [weather_type/1]).
+-import(polyline, [decode/1]).
+-import(osrm, [read_route/0]).
 
 %Supply a direction and location and work out if head wind or not
 %For now "know the location id" upfront, but ideally need to search for it at some point or present a choice.
@@ -132,15 +134,11 @@ maybe_quit() ->
 	end.	
 
 
-%For command line usage, from http://stackoverflow.com/a/8498073/208793
-headsilose([Location, Heading]) ->
-	headsilose(Location, Heading).
-headsilose(Location, Heading) ->
-	{Direction, Speed, Gust, Weather, Temperature} = get_weather(Location),
-	Weather_type = weather_types:weather_type(erlang:list_to_integer(Weather)),
+build_list_of_wind_directions(Wind_direction) ->
+	%There is only one wind direction, but can build groups of directions that will count as head, side and tail winds
 	Compass = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"],
 	%Quicker dirtier(?) way to do below would be: http://stackoverflow.com/a/6762191/208793
-	Index = length(lists:takewhile(fun(X) -> X  =/= Direction end, Compass))+1,
+	Index = length(lists:takewhile(fun(X) -> X  =/= Wind_direction end, Compass))+1,
 	%Since heading is to direction and winds are from, opposite is -2 to +2, or to make it easier to wrap, +14 +18
 	%Since heading is to direction and winds are from, sidewinds are -5 to -3 and +3 to +5, or to make it easier to wrap, +14 +18
 	%And so on
@@ -152,18 +150,67 @@ headsilose(Location, Heading) ->
 			nth_wrap(Index+X, Compass) end,
 			WindList)
 		end,
-		[HeadwindList, SidewindList, TailwindList]),
+		[HeadwindList, SidewindList, TailwindList]).
+
+
+convert_lats_longs_to_distance_heading([_, _, Rest])  -> 
+	%All co-ords are diff, so just ignore first two
+	convert_lats_longs_to_distance_heading_(Rest, []).
+convert_lats_longs_to_distance_heading_([Lat, Lon, Rest], List_distance_headings) ->
+	%Want to map through the list convert co-ords to distance and heading
+	Distance = math:sqrt(math:pow(Lat,2) + math:pow(Lon,2)),
+	Heading = math:atan2(Lon, Lat),
+	Compass_direction = get_compass_direction_for(Heading),
+	convert_lats_longs_to_distance_heading_(Rest, [{Distance, Compass_direction}]++List_distance_headings);
+convert_lats_longs_to_distance_heading_([], List_distance_headings) ->
+	lists:reverse(List_distance_headings).
+
+
+get_compass_direction_for(Heading) ->
+	%In a way this is a waste of time as could just do headwind, etc based on angles, but since already have some code, why not?
+	Segment = 2*math:pi()/16,
+	Segments = erlang:round(Heading/Segment),
+	Compass = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"],
+	lists:nth(Segments, Compass).
+
+
+head_side_or_tail_wind(Direction, [Headwinds, Sidewinds, Tailwinds]) ->
 	[Headwind, Sidewind, Tailwind] = lists:map(fun(Winds) ->
-		lists:member(Heading, Winds) end,
+		lists:member(Direction, Winds) end,
 		[Headwinds, Sidewinds, Tailwinds]),
 	if Headwind ->
-		io:format("Heads you lose!~n");
+		headwind;
 	Sidewind ->
-		io:format("It's a draw~n");
+		sidewind;
 	Tailwind ->
-		io:format("Tails you win!~n")
-	end,
-	io:format("Direction: ~s~nSpeed: ~s mph~nGust: ~s mph~nWeather type: ~s~nTemperature: ~s deg C~n", [Direction, Speed, Gust, Weather_type, Temperature]).
+		tailwind
+	end.
+%Something like that?
+	
+
+headsilose(Location) ->
+	{Direction, Speed, Gust, Weather, Temperature} = get_weather(Location),
+	Weather_type = weather_types:weather_type(erlang:list_to_integer(Weather)),
+	[Headwinds, Sidewinds, Tailwinds] = build_list_of_wind_directions(Direction),
+	%Ok so now map this list over (like previous function) the headings list to get list of head, side, tail and distances?
+
+	{_Checksum, Polyline} = osrm:read_route(),
+	Polyline_decoded = polyline:decode(Polyline),
+	List_of_distances_and_compass = convert_lats_longs_to_distance_heading(Polyline_decoded),
+	%If now have a set of co-ords need to figure out distances and directions
+	List_of_distances_and_wind = lists:map(fun({Compass, Distance}) ->
+			Wind = head_side_or_tail_wind(Compass, [Headwinds, Sidewinds, Tailwinds]),
+			{Wind, Distance}
+		end,
+		List_of_distances_and_compass),
+	%lists:map to get distnaces only? Could also map each of the winds?
+	%Figure out for headwinds only for now
+	Headw = lists:filter(fun({Element, _}) ->
+		Element == headwind end,
+		List_of_distances_and_wind),
+	Sum_of_Headw = lists:foldl(fun({_wind, Distance}, Sum) -> Distance + Sum end, 0, Headw),
+	io:format(Sum_of_Headw).
+	%io:format("Direction: ~s~nSpeed: ~s mph~nGust: ~s mph~nWeather type: ~s~nTemperature: ~s deg C~n", [Direction, Speed, Gust, Weather_type, Temperature]).
 
 
 %Need to read API key from file
