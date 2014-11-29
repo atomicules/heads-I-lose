@@ -114,7 +114,8 @@ nth_wrap(N, List) ->
 	if Rem > 0 ->
 		lists:nth(Rem, List);
 	Rem =:= 0 ->
-		1
+		%Get last of list
+		hd(lists:reverse(List))
 	end.
 
 
