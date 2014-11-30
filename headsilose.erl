@@ -210,12 +210,14 @@ headsilose(Location) ->
 			{Distance, Wind}
 		end,
 		List_of_distances_and_compass),
-	%lists:map to get distnaces only? Could also map each of the winds?
-	%Figure out for headwinds only for now
-	Headw = lists:filter(fun({_Distance, Wind_type}) ->
-		Wind_type == headwind end,
-		List_of_distances_and_wind),
-	Sum_of_Headw = lists:foldl(fun({Distance2, _Wind}, Sum) -> Distance2 + Sum end, 0, Headw).
+	[Headw, Sidew, Tailw] = lists:map(fun(Wind_group) ->
+		lists:filter(fun({_Distance, Wind_type}) ->
+			Wind_type == Wind_group end,
+			List_of_distances_and_wind) end,
+		[headwind, sidewind, tailwind]),
+	[Sum_of_Headw, Sum_of_Sidew, Sum_of_Tailw] = lists:map(fun(Windg) ->
+		lists:foldl(fun({Distance2, _Wind}, Sum) -> Distance2 + Sum end, 0, Windg) end,
+		[Headw, Sidew, Tailw]).
 	%io:format("Direction: ~s~nSpeed: ~s mph~nGust: ~s mph~nWeather type: ~s~nTemperature: ~s deg C~n", [Direction, Speed, Gust, Weather_type, Temperature]).
 
 
