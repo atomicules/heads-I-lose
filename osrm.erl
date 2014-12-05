@@ -30,7 +30,7 @@ get_route([Start_lat, Start_lon], [Finish_lat, Finish_lon]) ->
 		%Handling timeouts: http://stackoverflow.com/a/14143762/208793
 		{ ok, {_Status, _Headers, Body }} = httpc:request(get, {URL, [{"User-Agent", UA}]}, [{timeout, timer:seconds(10)}], []),
 		%For development purposes, write this out and keep it
-		_WriteStatus = file:write_file(os:getenv("HOME") ++ "/.headsilose_route", Body),
+		_Write_status = file:write_file(os:getenv("HOME") ++ "/.headsilose_route", Body),
 		%Need to catch file write errors as well
 		Body
 	catch
@@ -56,14 +56,15 @@ read_route() ->
 	%Like so:
 	{Hint_data} = proplists:get_value(<<"hint_data">>, Props),
 	Checksum = proplists:get_value(<<"checksum">>, Hint_data),
-	Route_geometryS = binary:bin_to_list(Route_geometry),
-	{Checksum, Route_geometryS}.
+	Route_geometry_as_string = binary:bin_to_list(Route_geometry),
+	{Checksum, Route_geometry_as_string}.
 
 
 maybe_quit() ->
-	Args = init:get_arguments(), 
+	Args = init:get_arguments(),
 	Found = lists:keyfind(noshell, 1, Args),
 	if Found =:= false ->
 		dont_quit;
-	true -> init:stop()
-	end.	
+	true ->
+		init:stop()
+	end.

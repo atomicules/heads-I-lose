@@ -8,9 +8,9 @@ decode(Encoded_polyline) ->
 	%Steps 11 back to 8
 	Six_bit_chunks = six_bit_chunks(Encoded_polyline),
 	%Step 8
-	List_of_groups_of_chunks = split_up_six_bits(Six_bit_chunks),
+	Groups_of_chunks_list = split_up_six_bits(Six_bit_chunks),
 	%Step 8 back to 6
-	Five_bit_chunks = five_bit_chunks(List_of_groups_of_chunks),
+	Five_bit_chunks = five_bit_chunks(Groups_of_chunks_list),
 	%---TODO
 	%Maybe some more of the below need splitting out into different functions or nesting in a map?
 	%Which option to go for, a function that maps as per five_bit_chunks, or mapping functions as per below?
@@ -53,7 +53,7 @@ decode(Encoded_polyline) ->
 			Decoded = if Last_bit =:= "1" ->
 				-1 * Final_binary/100000;
 			true ->
-				Final_binary/100000	
+				Final_binary/100000
 			end,
 			Decoded
 		end,
@@ -62,44 +62,44 @@ decode(Encoded_polyline) ->
 	
 
 %Step 8 - Split up six bit chunks, per the 0x20 bit
-split_up_six_bits(List_of_bit_chunks) ->
-	split_up_six_bits_(List_of_bit_chunks, [], []).
-split_up_six_bits_([Head | Tail], Group_of_bit_chunks, List_of_groups_of_bit_chunks) when [hd(Head)] == "1" ->
-	split_up_six_bits_(Tail, [Head]++Group_of_bit_chunks, List_of_groups_of_bit_chunks);
-split_up_six_bits_([Head | Tail], Group_of_bit_chunks, List_of_groups_of_bit_chunks) when [hd(Head)] == "0" ->
+split_up_six_bits(Bit_chunks_list) ->
+	split_up_six_bits_(Bit_chunks_list, [], []).
+split_up_six_bits_([Head | Tail], Group_of_bit_chunks, Groups_of_bit_chunks_list) when [hd(Head)] == "1" ->
+	split_up_six_bits_(Tail, [Head]++Group_of_bit_chunks, Groups_of_bit_chunks_list);
+split_up_six_bits_([Head | Tail], Group_of_bit_chunks, Groups_of_bit_chunks_list) when [hd(Head)] == "0" ->
 	%Then need to start a new list, but after this 0 one!
-	split_up_six_bits_(Tail, [], [lists:reverse([Head]++Group_of_bit_chunks)]++List_of_groups_of_bit_chunks);	
-split_up_six_bits_([], Group_of_bit_chunks, List_of_groups_of_bit_chunks) when length(Group_of_bit_chunks) > 0 ->
-	split_up_six_bits_([], [], [lists:reverse(Group_of_bit_chunks)]++List_of_groups_of_bit_chunks);
-split_up_six_bits_([], [], List_of_groups_of_bit_chunks) ->
+	split_up_six_bits_(Tail, [], [lists:reverse([Head]++Group_of_bit_chunks)]++Groups_of_bit_chunks_list);
+split_up_six_bits_([], Group_of_bit_chunks, Groups_of_bit_chunks_list) when length(Group_of_bit_chunks) > 0 ->
+	split_up_six_bits_([], [], [lists:reverse(Group_of_bit_chunks)]++Groups_of_bit_chunks_list);
+split_up_six_bits_([], [], Groups_of_bit_chunks_list) ->
 	%TODO Might be neater to map lists:reverse over the list instead of doing above and here.
-	lists:reverse(List_of_groups_of_bit_chunks).
+	lists:reverse(Groups_of_bit_chunks_list).
 
 
 %Step 5
 %TODO See if better way of doing this
-eight_bit_chunks(List_of_five_bit_chunks) ->
-	Five_bit_chunk_string = lists:reverse(lists:flatten(List_of_five_bit_chunks)),
+eight_bit_chunks(Five_bit_chunks_list) ->
+	Five_bit_chunk_string = lists:reverse(lists:flatten(Five_bit_chunks_list)),
 	eight_bit_chunks_(Five_bit_chunk_string, []).
-eight_bit_chunks_(Five_bit_chunk_string, List_of_eight_bit_chunks) when length(Five_bit_chunk_string) > 8 ->  
+eight_bit_chunks_(Five_bit_chunk_string, Eight_bit_chunks_list) when length(Five_bit_chunk_string) > 8 ->
 	Eight_bit_chunk = lists:reverse(lists:sublist(Five_bit_chunk_string,1,8)),
 	Rest_of_five_bit_chunk_string = lists:nthtail(8,Five_bit_chunk_string),
-	eight_bit_chunks_(Rest_of_five_bit_chunk_string, [Eight_bit_chunk]++List_of_eight_bit_chunks);
-eight_bit_chunks_(Five_bit_chunk_string, List_of_eight_bit_chunks) when length(Five_bit_chunk_string) =< 8, Five_bit_chunk_string /= [] ->  
+	eight_bit_chunks_(Rest_of_five_bit_chunk_string, [Eight_bit_chunk]++Eight_bit_chunks_list);
+eight_bit_chunks_(Five_bit_chunk_string, Eight_bit_chunks_list) when length(Five_bit_chunk_string) =< 8, Five_bit_chunk_string /= [] ->
 	Padded_bit_string = pad_to(8, lists:reverse(Five_bit_chunk_string)),
-	eight_bit_chunks_([], [Padded_bit_string]++List_of_eight_bit_chunks);
-eight_bit_chunks_([], List_of_eight_bit_chunks) ->
-	List_of_eight_bit_chunks.
+	eight_bit_chunks_([], [Padded_bit_string]++Eight_bit_chunks_list);
+eight_bit_chunks_([], Eight_bit_chunks_list) ->
+	Eight_bit_chunks_list.
 
 
 six_bit_chunks(Encoded_polyline) ->
 	six_bit_chunks_(Encoded_polyline, []).
-six_bit_chunks_([Head | Rest], List_of_chunks) ->
+six_bit_chunks_([Head | Rest], Chunks_list) ->
 	Six_bit_chunk = six_bit_chunk(Head),
 	%Add to Reversed_chunks
-	six_bit_chunks_(Rest, [Six_bit_chunk]++List_of_chunks);
-six_bit_chunks_([], List_of_chunks) ->
-	lists:reverse(List_of_chunks).
+	six_bit_chunks_(Rest, [Six_bit_chunk]++Chunks_list);
+six_bit_chunks_([], Chunks_list) ->
+	lists:reverse(Chunks_list).
 
 
 six_bit_chunk(Ascii_bit) ->
@@ -115,7 +115,7 @@ six_bit_chunk(Ascii_bit) ->
 	pad_to(6, Binary_chunk).
 
 
-five_bit_chunks(List_of_groups_of_chunks) ->
+five_bit_chunks(Groups_of_chunks_list) ->
 	lists:map(
 		fun(Group_of_chunks) ->
 			%Step 7 - Un-reverse the five bit chunks
@@ -126,7 +126,7 @@ five_bit_chunks(List_of_groups_of_chunks) ->
 				end,
 				Group_of_chunks))
 		end,
-		List_of_groups_of_chunks).
+		Groups_of_chunks_list).
 
 
 %I can't figure out padding with io:format etc when printing binary numbers
@@ -135,11 +135,11 @@ pad_to(Length, Binary_string) when length(Binary_string) < Length ->
 	pad_to(Length, Padded_binary_string);
 pad_to(Length, Binary_string) when length(Binary_string) == Length ->
 	Binary_string.
-	
+
 
 %bnot doesn't seem to work as I thought it would so do it very inelegantly by switching each "bit" in a string.
 bin_flip(Binary_number) ->
-	Binary_string =	hd(io_lib:format("~.2B", [Binary_number])),
+	Binary_string = hd(io_lib:format("~.2B", [Binary_number])),
 	bin_flip_(Binary_string, []).
 bin_flip_([Head | Rest], Flipped_string) ->
 	Head_bit = hd(io_lib:format("~c",[Head])),

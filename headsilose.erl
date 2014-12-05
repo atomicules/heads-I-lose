@@ -8,7 +8,7 @@
 %Supply a direction and location and work out if head wind or not
 %For now "know the location id" upfront, but ideally need to search for it at some point or present a choice.
 
-%Initially based on: http://pragdave.pragprog.com/pragdave/2007/04/a_first_erlang_.html 
+%Initially based on: http://pragdave.pragprog.com/pragdave/2007/04/a_first_erlang_.html
 
 -define(BASE_URL,
 	"http://datapoint.metoffice.gov.uk/public/data/").
@@ -73,7 +73,8 @@ get_weather(Location) ->
 		  [ #xmlAttribute{value=Speed} ],
 		  [ #xmlAttribute{value=Gust} ],
 		  [ #xmlAttribute{value=Weather} ],
-		  [ #xmlAttribute{value=Temperature} ] ] = lists:map(fun(X) ->
+		  [ #xmlAttribute{value=Temperature} ] ] = lists:map(
+			fun(X) ->
 				xmerl_xpath:string("//Period[@value='" ++ Date_formatted ++ "']/Rep[.='" ++ Rep ++ "']/@"++X, Xml)
 			end,
 			["D", "S", "G", "W", "T"]),
@@ -105,8 +106,8 @@ date_and_rep(Date, Hours) when Hours >= 19 ->
 format_date(Date_to_format) ->
 	{{Year, Month, Day}, {_Hours, _Minutes, _Seconds}} = Date_to_format,
 	%Thanks to: http://stackoverflow.com/a/7599506/208793
-	DateAsString = io_lib:format("~4..0w-~2..0w-~2..0wZ", [Year, Month, Day]),
-	lists:flatten(DateAsString).
+	Date_as_string = io_lib:format("~4..0w-~2..0w-~2..0wZ", [Year, Month, Day]),
+	lists:flatten(Date_as_string).
 
 
 nth_wrap(N, List) ->
@@ -131,8 +132,9 @@ maybe_quit() ->
 	Found = lists:keyfind(noshell, 1, Args),
 	if Found =:= false ->
 		dont_quit;
-	true -> init:stop()
-	end.	
+	true ->
+		init:stop()
+	end.
 
 
 build_list_of_wind_directions(Wind_direction) ->
@@ -143,21 +145,24 @@ build_list_of_wind_directions(Wind_direction) ->
 	%Since heading is to direction and winds are from, opposite is -2 to +2, or to make it easier to wrap, +14 +18
 	%Since heading is to direction and winds are from, sidewinds are -5 to -3 and +3 to +5, or to make it easier to wrap, +14 +18
 	%And so on
-	HeadwindList = lists:seq(14,18),
-	SidewindList = lists:seq(3,5)++lists:seq(11,13),
-	TailwindList = lists:seq(6,10),
-	[Headwinds, Sidewinds, Tailwinds] = lists:map(fun(WindList) ->
-		lists:map(fun(X) ->
-			nth_wrap(Index+X, Compass) end,
-			WindList)
+	Headwind_list = lists:seq(14,18),
+	Sidewind_list = lists:seq(3,5)++lists:seq(11,13),
+	Tailwind_list = lists:seq(6,10),
+	lists:map(
+		fun(Wind_list) ->
+			lists:map(
+				fun(X) ->
+					nth_wrap(Index+X, Compass)
+				end,
+				Wind_list)
 		end,
-		[HeadwindList, SidewindList, TailwindList]).
+		[Headwind_list, Sidewind_list, Tailwind_list]).
 
 
 convert_lats_longs_to_distance_heading([_Head1 | [ _Head2 | Rest]])  -> 
 	%All co-ords are diff, so just ignore first two
 	convert_lats_longs_to_distance_heading_(Rest, []).
-convert_lats_longs_to_distance_heading_([Lat | [Lon | Rest]], List_distance_headings) ->
+convert_lats_longs_to_distance_heading_([Lat | [Lon | Rest]], Distance_headings_list) ->
 	%Want to map through the list convert co-ords to distance and heading
 	Distance = math:sqrt(math:pow(Lat,2) + math:pow(Lon,2)),
 	Heading_signed = math:atan2(Lon, Lat),
@@ -168,9 +173,9 @@ convert_lats_longs_to_distance_heading_([Lat | [Lon | Rest]], List_distance_head
 				Heading_signed
 			end,
 	Compass_direction = get_compass_direction_for(Heading),
-	convert_lats_longs_to_distance_heading_(Rest, [{Distance, Compass_direction}]++List_distance_headings);
-convert_lats_longs_to_distance_heading_([], List_distance_headings) ->
-	lists:reverse(List_distance_headings).
+	convert_lats_longs_to_distance_heading_(Rest, [{Distance, Compass_direction}]++Distance_headings_list);
+convert_lats_longs_to_distance_heading_([], Distance_headings_list) ->
+	lists:reverse(Distance_headings_list).
 
 
 get_compass_direction_for(Heading) ->
@@ -182,8 +187,10 @@ get_compass_direction_for(Heading) ->
 
 
 head_side_or_tail_wind(Direction, [Headwinds, Sidewinds, Tailwinds]) ->
-	[Headwind, Sidewind, Tailwind] = lists:map(fun(Winds) ->
-		lists:member(Direction, Winds) end,
+	[Headwind, Sidewind, Tailwind] = lists:map(
+		fun(Winds) ->
+			lists:member(Direction, Winds)
+		end,
 		[Headwinds, Sidewinds, Tailwinds]),
 	if Headwind ->
 		headwind;
@@ -203,25 +210,36 @@ headsilose(Location) ->
 
 	{_Checksum, Polyline} = osrm:read_route(),
 	Polyline_decoded = polyline:decode(Polyline),
-	List_of_distances_and_compass = convert_lats_longs_to_distance_heading(Polyline_decoded),
+	Distances_and_compass_list = convert_lats_longs_to_distance_heading(Polyline_decoded),
 	%If now have a set of co-ords need to figure out distances and directions
-	List_of_distances_and_wind = lists:map(fun({Distance, Compass}) ->
-			Wind = head_side_or_tail_wind(Compass, [Headwinds, Sidewinds, Tailwinds]),
-			{Distance, Wind}
+	Distances_and_wind_type_list = lists:map(
+		fun({Distance, Compass}) ->
+			Wind_type = head_side_or_tail_wind(Compass, [Headwinds, Sidewinds, Tailwinds]),
+			{Distance, Wind_type}
 		end,
-		List_of_distances_and_compass),
-	[Headw, Sidew, Tailw] = lists:map(fun(Wind_group) ->
-		lists:filter(fun({_Distance, Wind_type}) ->
-			Wind_type == Wind_group end,
-			List_of_distances_and_wind) end,
+		Distances_and_compass_list),
+	[Headwind_distances, Sidewind_distances, Tailwind_distances] = lists:map(
+		fun(Wind_type_filter) ->
+			lists:filter(
+				fun({_Distance, Wind_type}) ->
+					Wind_type == Wind_type_filter
+				end,
+				Distances_and_wind_type_list)
+		end,
 		[headwind, sidewind, tailwind]),
-	[Sum_of_Headw, Sum_of_Sidew, Sum_of_Tailw] = lists:map(fun(Windg) ->
-		lists:foldl(fun({Distance2, _Wind}, Sum) -> Distance2 + Sum end, 0, Windg) end,
-		[Headw, Sidew, Tailw]).
+	[Sum_of_headwind_distances, Sum_of_sidewind_distances, Sum_of_tailwind_distances] = lists:map(
+		fun(Wind_type) ->
+			lists:foldl(
+				fun({Distance, _Wind}, Sum) ->
+					Distance + Sum
+				end,
+				0,
+				Wind_type)
+		end,
+		[Headwind_distances, Sidewind_distances, Tailwind_distances]).
 	%io:format("Direction: ~s~nSpeed: ~s mph~nGust: ~s mph~nWeather type: ~s~nTemperature: ~s deg C~n", [Direction, Speed, Gust, Weather_type, Temperature]).
-
 
 %Need to read API key from file
 readapikey() ->
-	{_Status, KeyB} = file:read_file(os:getenv("HOME") ++ "/.datapoint"),
-	string:strip(erlang:binary_to_list(KeyB),right,$\n).
+	{_Status, Key} = file:read_file(os:getenv("HOME") ++ "/.datapoint"),
+	string:strip(erlang:binary_to_list(Key),right,$\n).
