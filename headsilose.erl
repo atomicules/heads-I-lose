@@ -88,7 +88,6 @@ get_weather(Location) ->
 	end.
 
 
-
 date_and_rep(Date) ->
 	{{_Year, _Month, _Day}, {Hours, _Minutes, _Seconds}} = Date,
 	date_and_rep(Date, Hours).
@@ -135,6 +134,12 @@ maybe_quit() ->
 	true ->
 		init:stop()
 	end.
+
+
+%From: http://www.codecodex.com/wiki/index.php?title=Round_a_number_to_a_specific_decimal_place#Erlang
+round(Number, Precision) ->
+	P = math:pow(10, Precision),
+		round(Number * P) / P.
 
 
 build_list_of_wind_directions(Wind_direction) ->
@@ -236,8 +241,23 @@ headsilose(Location) ->
 				0,
 				Wind_type)
 		end,
-		[Headwind_distances, Sidewind_distances, Tailwind_distances]).
-	%io:format("Direction: ~s~nSpeed: ~s mph~nGust: ~s mph~nWeather type: ~s~nTemperature: ~s deg C~n", [Direction, Speed, Gust, Weather_type, Temperature]).
+		[Headwind_distances, Sidewind_distances, Tailwind_distances]),
+	Total_distance = Sum_of_headwind_distances + Sum_of_sidewind_distances + Sum_of_tailwind_distances,
+	%Determine which is worse
+	if (Sum_of_headwind_distances > Sum_of_sidewind_distances) and (Sum_of_headwind_distances > Sum_of_tailwind_distances) ->
+		io:format("Heads you lose!~n");
+	(Sum_of_tailwind_distances > Sum_of_sidewind_distances) and (Sum_of_tailwind_distances > Sum_of_headwind_distances) ->
+		io:format("Tails you win!~n");
+	(Sum_of_sidewind_distances >= Sum_of_headwind_distances) and (Sum_of_sidewind_distances >= Sum_of_tailwind_distances) ->
+		io:format("It's a draw~n")
+	end,
+	Headwind_percent = round((Sum_of_headwind_distances/Total_distance)*100, 2),
+	Sidewind_percent = round((Sum_of_sidewind_distances/Total_distance)*100, 2),
+	Tailwind_percent = round((Sum_of_tailwind_distances/Total_distance)*100, 2),
+	io:format("~w% Headwind~n~w% Sidewind~n~w% Tailwind~n", [Headwind_percent, Sidewind_percent, Tailwind_percent]),
+%
+	io:format("Direction: ~s~nSpeed: ~s mph~nGust: ~s mph~nWeather type: ~s~nTemperature: ~s deg C~n", [Direction, Speed, Gust, Weather_type, Temperature]).
+
 
 %Need to read API key from file
 readapikey() ->
