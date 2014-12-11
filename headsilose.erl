@@ -1,5 +1,5 @@
 -module(headsilose).
--export([get_locations/0, get_locations/1, get_weather/1, headsilose/1]).
+-export([get_locations/0, get_locations/1, headsilose/1]).
 -include_lib("xmerl/include/xmerl.hrl").
 -import(weather_types, [weather_type/1]).
 -import(polyline, [decode/1]).
@@ -60,12 +60,10 @@ print_locations([Node|Rest]) ->
 	print_locations(Rest).
 
 
-get_weather(Location) ->
+get_weather(Location, { Date_formatted, Rep }) ->
 	inets:start(),
 	Key = readapikey(),
 	URL = ?BASE_URL ++ ?WXFCS_LOCATIONID ++ Location ++ "?key=" ++ Key ++ "&res=3hourly",
-	Date_today = erlang:localtime(),
-	{ Date_formatted, Rep } = date_and_rep(Date_today),
 	try
 		{ ok, {_Status, _Headers, Body }} = httpc:request(get, {URL, []}, [{timeout, timer:seconds(10)}], []),
 		{ Xml, _Rest } = xmerl_scan:string(Body),
@@ -177,10 +175,28 @@ convert_lats_longs_to_distance_heading_([Lat | [Lon | Rest]], Distance_headings_
 			true ->
 				Heading_signed
 			end,
-	Compass_direction = get_compass_direction_for(Heading),
-	convert_lats_longs_to_distance_heading_(Rest, [{Distance, Compass_direction}]++Distance_headings_list);
+	convert_lats_longs_to_distance_heading_(Rest, [{Distance, Heading}]++Distance_headings_list);
 convert_lats_longs_to_distance_heading_([], Distance_headings_list) ->
 	lists:reverse(Distance_headings_list).
+
+
+journey(Distance_headings_list) ->
+	lists:map(
+		fun({Distance, Heading}) ->
+			Compass_direction = get_compass_direction_for(Heading),
+			{Distance, Compass_direction}
+		end,
+		Distance_headings_list).
+
+
+reverse_journey(Distance_headings_list) ->
+	%Don't actually need a correctly ordered reverse route, as long as we have directions and distances.
+	lists:map(
+		fun({Distance, Compass_direction}) ->
+			Reverse_direction = Compass_direction + math:pi(),
+			{Distance, Reverse_direction}
+		end,
+		Distance_headings_list).
 
 
 get_compass_direction_for(Heading) ->
@@ -208,21 +224,27 @@ head_side_or_tail_wind(Direction, [Headwinds, Sidewinds, Tailwinds]) ->
 	
 
 headsilose(Location) ->
-	{Direction, Speed, Gust, Weather, Temperature} = get_weather(Location),
+	Date_today = erlang:localtime(),
+	{ Date_formatted, Rep } = date_and_rep(Date_today),
+	{Direction, Speed, Gust, Weather, Temperature} = get_weather(Location,  { Date_formatted, Rep }),
 	Weather_type = weather_types:weather_type(erlang:list_to_integer(Weather)),
 	[Headwinds, Sidewinds, Tailwinds] = build_list_of_wind_directions(Direction),
-	%Ok so now map this list over (like previous function) the headings list to get list of head, side, tail and distances?
-
 	{_Checksum, Polyline} = osrm:read_route(),
 	Polyline_decoded = polyline:decode(Polyline),
-	Distances_and_compass_list = convert_lats_longs_to_distance_heading(Polyline_decoded),
+	Distances_and_headings_list = convert_lats_longs_to_distance_heading(Polyline_decoded),
+	%A better representation than 360 or 1080 would be better now this is used here as well.
+	Journey = if Rep =:= "360" ->
+		journey(Distances_and_headings_list);
+	Rep =:= "1080" ->
+		reverse_journey(Distances_and_headings_list)
+	end,
 	%If now have a set of co-ords need to figure out distances and directions
 	Distances_and_wind_type_list = lists:map(
 		fun({Distance, Compass}) ->
 			Wind_type = head_side_or_tail_wind(Compass, [Headwinds, Sidewinds, Tailwinds]),
 			{Distance, Wind_type}
 		end,
-		Distances_and_compass_list),
+		Journey),
 	[Headwind_distances, Sidewind_distances, Tailwind_distances] = lists:map(
 		fun(Wind_type_filter) ->
 			lists:filter(
