@@ -192,9 +192,16 @@ journey(Distance_headings_list) ->
 reverse_journey(Distance_headings_list) ->
 	%Don't actually need a correctly ordered reverse route, as long as we have directions and distances.
 	lists:map(
-		fun({Distance, Compass_direction}) ->
-			Reverse_direction = Compass_direction + math:pi(),
-			{Distance, Reverse_direction}
+		fun({Distance, Heading}) ->
+			%Because can't have functions in guards
+			Pi = math:pi(),
+			Reverse_heading = if Heading < Pi ->
+				Heading + Pi;
+			Heading >= Pi ->
+				Heading - Pi
+			end,
+			Compass_direction = get_compass_direction_for(Reverse_heading),
+			{Distance, Compass_direction}
 		end,
 		Distance_headings_list).
 
