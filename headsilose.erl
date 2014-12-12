@@ -209,9 +209,10 @@ reverse_journey(Distance_headings_list) ->
 get_compass_direction_for(Heading) ->
 	%In a way this is a waste of time as could just do headwind, etc based on angles, but since already have some code, why not?
 	Segment = 2*math:pi()/16,
-	Segments = erlang:round(Heading/Segment),
+	Segments = erlang:round(Heading/Segment)+1,
 	Compass = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"],
-	lists:nth(Segments, Compass).
+	%Handle the case of Segments = 16. Need to wrap around.
+	nth_wrap(Segments, Compass).
 
 
 head_side_or_tail_wind(Direction, [Headwinds, Sidewinds, Tailwinds]) ->
