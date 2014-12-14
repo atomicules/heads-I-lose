@@ -3,11 +3,7 @@
 -import(polyline, [decode/1]).
 
 %https://github.com/Project-OSRM/osrm-backend/wiki/Server-api
-
-%Idea: Given a lat and long, get the route
-%Then use that to build up list of compass directions and distances
-%And, for now, get weather for one location (probably good enough as relatively short distances weather wise; ultimately consider time as well?)
-%Then do distance and wind direction as percentage of overall distance to work out what wins, headwind, sidewind, etc.
+%For now, get weather for one location (probably good enough as relatively short distances weather wise; ultimately consider time as well?)
 %To get lats and longs could also do a query for here: http://www.uk-postcodes.com/ (json again)
 
 -define(BASE_URL,
