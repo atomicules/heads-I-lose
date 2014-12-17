@@ -18,7 +18,7 @@ Since I wrote this to be semi-useful for me, the result returned depends on the 
 _Hint:_ I have a shell function defined as follows:
 
 	function headsilose {
-		erl -pa /home/simon/Code/github/atomicules/heads-I-lose /home/simon/Code/github/atomicules/heads-I-lose/ebin -run headsilose headsilose XXXXXX -noshell;
+		erl -pa /home/simon/Code/github/atomicules/heads-I-lose /home/simon/Code/github/atomicules/heads-I-lose/ebin -run headsilose headsilose XXXXXX alternative_geometries -noshell;
 	}
 
 So I can just call
@@ -37,7 +37,9 @@ Which will result in something like the following being printed out:
 	Weather type: Cloudy
 	Temperature: 4 deg C
 
-_Note:_ I don't use [init stop](http://erlangcentral.org/wiki/index.php?title=Running_Erlang_Code_From_The_Command_Line&oldid=2293) in my main command line call as I have that in my script instead. Otherwise, if `headsilose` errors out then `init stop` will crash out (I guess because it is trying to stop something that isn't running).
+_Note1:_ Since the route is from OSRM there is the option to specify `alternative_geometries` as an argument. In theory OSRM can return more than one alternative route, but in practice (at least as far as I can tell) I think it only ever returns one alternative route so although the argument is `alternative_geometries` it is actually the first alternative that is used. If `alternative_geometries` is not specified then the default route is used. If you'd like to see visually which route is the default and which is the alternative you can see them at [Project OSRM](http://map.project-osrm.org/) as routes A (default) and B (alternative).
+
+_Note2:_ I don't use [init stop](http://erlangcentral.org/wiki/index.php?title=Running_Erlang_Code_From_The_Command_Line&oldid=2293) in my main command line call as I have that in my script instead. Otherwise, if `headsilose` errors out then `init stop` will crash out (I guess because it is trying to stop something that isn't running).
 
 ##Credits
 

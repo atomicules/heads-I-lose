@@ -1,5 +1,5 @@
 -module(osrm).
--export([get_route/1, get_route/2, read_route/0]).
+-export([get_route/1, get_route/2, read_route/1]).
 -import(polyline, [decode/1]).
 
 %https://github.com/Project-OSRM/osrm-backend/wiki/Server-api
@@ -38,12 +38,18 @@ get_route([Start_lat, Start_lon], [Finish_lat, Finish_lon]) ->
 	end.
 
 
-read_route() ->
+read_route(Route_choice) ->
 	{_Status, Route} = file:read_file(os:getenv("HOME") ++ "/.headsilose_route"),
 	%Use jiffy
 	%http://www.snip2code.com/Snippet/51463/how-to-support-chinese-in-http-request-b/
 	{ Props } = jiffy:decode(Route),
-	Route_geometry = proplists:get_value(<<"route_geometry">>, Props),
+	Route_geometry = if Route_choice =:= "route_geometry" ->
+		proplists:get_value(binary:list_to_bin(Route_choice), Props);
+	Route_choice =:= "alternative_geometries" ->
+		%hd only if alternative though!
+		%for now I think there is only ever one alternative so that is why we pick hd
+		hd(proplists:get_value(binary:list_to_bin(Route_choice), Props))
+	end,
 	%That is all for now? Because...
 	%And these don't seem to actually be returned, hence having to go down the route of polyline decoding
 	%Route_Instructions = proplists:get_value(<<"route_instructions">>, Props),

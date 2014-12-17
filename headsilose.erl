@@ -3,7 +3,7 @@
 -include_lib("xmerl/include/xmerl.hrl").
 -import(weather_types, [weather_type/1]).
 -import(polyline, [decode/1]).
--import(osrm, [read_route/0]).
+-import(osrm, [read_route/1]).
 
 %Supply a direction and location and work out if head wind or not
 %For now "know the location id" upfront, but ideally need to search for it at some point or present a choice.
@@ -231,13 +231,22 @@ head_side_or_tail_wind(Direction, [Headwinds, Sidewinds, Tailwinds]) ->
 %Something like that?
 	
 
-headsilose(Location) ->
+%First two for command line usage
+headsilose([Location]) ->
+	headsilose_(Location);
+headsilose([Location, Route_choice]) ->
+	headsilose_(Location, Route_choice).
+headsilose_(Location) ->
+	%If route choice not specified default to default!
+	%The other choice is "alternative_geometries", for now I think there is only ever one alternative so pick this first.
+	headsilose_(Location, "route_geometry").
+headsilose_(Location, Route_choice) ->
 	Date_today = erlang:localtime(),
 	{ Date_formatted, Rep } = date_and_rep(Date_today),
 	{Direction, Speed, Gust, Weather, Temperature} = get_weather(Location,  { Date_formatted, Rep }),
 	Weather_type = weather_types:weather_type(erlang:list_to_integer(Weather)),
 	[Headwinds, Sidewinds, Tailwinds] = build_list_of_wind_directions(Direction),
-	{_Checksum, Polyline} = osrm:read_route(),
+	{_Checksum, Polyline} = osrm:read_route(Route_choice),
 	Polyline_decoded = polyline:decode(Polyline),
 	Distances_and_headings_list = convert_lats_longs_to_distance_heading(Polyline_decoded),
 	%A better representation than 360 or 1080 would be better now this is used here as well.
