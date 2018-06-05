@@ -1,8 +1,8 @@
-#Heads I Lose
+# Heads I Lose
 
 This started as a little learning exercise in Erlang, but I've been building on it to make it more useful for my cycle commute. It looks up the wind direction ([via the MetOffice Datapoint API](http://www.metoffice.gov.uk/datapoint/api)) and for a given route (a polyline from [OSRM](http://project-osrm.org/)) determines how much of the route is a headwind sidewind or tailwind. 
 
-##Usage
+## Usage
 
 Since it has just been developed for personal use installation is not very polished.
 
@@ -41,7 +41,7 @@ _Note1:_ Since the route is from OSRM there is the option to specify `alternativ
 
 _Note2:_ I don't use [init stop](http://erlangcentral.org/wiki/index.php?title=Running_Erlang_Code_From_The_Command_Line&oldid=2293) in my main command line call as I have that in my script instead. Otherwise, if `headsilose` errors out then `init stop` will crash out (I guess because it is trying to stop something that isn't running).
 
-##Credits
+## Credits
 
 Various posts I've found that have helped me out:
 
@@ -56,7 +56,7 @@ Various posts I've found that have helped me out:
 
 I did read through a [number](http://www.mathworks.com/matlabcentral/fileexchange/32341-google-maps-api-polyline-decoder) [of](http://jeffreysambells.com/2010/05/27/decoding-polylines-from-google-maps-direction-api-with-java) [posts](http://seewah.blogspot.co.uk/2009/11/gpolyline-decoding-in-python.html)/[implementations](http://unitstep.net/blog/2008/08/02/decoding-google-maps-encoded-polylines-using-php/) [of](https://github.com/Project-OSRM/osrm-frontend/blob/master/WebContent/routing/OSRM.RoutingGeometry.js) polyline decoders, but they didn't really help me in Erlang so I just worked backwards through the [specification](https://developers.google.com/maps/documentation/utilities/polylinealgorithm) and wrote my own, much less concise, version rather than porting an existing implementation.
 
-##Todo
+## Todo
 
 _I should really put these as issues_
 
